@@ -2,10 +2,8 @@ package com.teqbahn.bootstrap
 
 import java.io.{File}
 import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.cluster.Cluster
 import akka.http.scaladsl.{Http}
-import akka.management.cluster.bootstrap.ClusterBootstrap
-import akka.management.scaladsl.AkkaManagement
+//import akka.management.scaladsl.AkkaManagement
 import akka.stream.{ActorMaterializer}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.teqbahn.actors.admin.AdminActor
@@ -73,7 +71,7 @@ object StarterMain {
       fromMail = args(5)
       fromMailPassword = args(6)
       SALT = args(7)
-      fileSystemPath = "/efs/tilli/"
+      // fileSystemPath = "/efs/tilli/"
     } else {
       confFile = "application_live.conf"
       akkaPort = System.getenv("akkaPort").toInt
@@ -99,18 +97,15 @@ object StarterMain {
 
     //    createDir(fileSystemPath + projectName)
 
-    implicit val actorSystem = ActorSystem("tilli", setupClusterNodeConfig(akkaPort))
+    //implicit val actorSystem = ActorSystem("tilli", setupNodeConfig(akkaPort))
+    implicit val actorSystem = ActorSystem("tilli")
     implicit val materializer = ActorMaterializer()
     implicit val executionContext = actorSystem.dispatcher
 
-    implicit val cluster = Cluster(actorSystem)
 
-    AkkaManagement(actorSystem).start()
-    ClusterBootstrap(actorSystem).start()
+   // AkkaManagement(actorSystem).start()
 
-    Cluster(actorSystem).registerOnMemberUp({
-      println("Cluster is up!" + akkaManagementHostName)
-    })
+
     import io.lettuce.core.RedisClient
     val client: RedisClient = RedisClient.create("redis://" + redisHostPath)
     val connection: StatefulRedisConnection[String, String] = client.connect()
@@ -138,18 +133,17 @@ object StarterMain {
 
   }
 
-  def setupClusterNodeConfig(port: Int): Config = ConfigFactory
+  def setupNodeConfig(port: Int): Config = ConfigFactory
     .parseString(
       "akka.remote.netty.tcp.port=" + port + "\n"
         + "akka.remote.netty.tcp.hostname=" + akkaManagementHostName + "\n"
         + "akka.remote.netty.tcp.port=" + akkaPort + "\n"
-        + "akka.cluster.roles=[\"worker\"]  \n"
-        + "akka.management.http.port=" + akkaManagementPort + "\n"
-        + "akka.management.http.bind-port=" + akkaManagementPort + "\n"
+      //  + "akka.management.http.port=" + akkaManagementPort + "\n"
+       // + "akka.management.http.bind-port=" + akkaManagementPort + "\n"
         + "akka.remote.artery.canonical.hostname=" + akkaManagementHostName + "\n"
-        + "akka.management.http.hostname=" + akkaManagementHostName + "\n"
+       // + "akka.management.http.hostname=" + akkaManagementHostName + "\n"
         + "akka.remote.artery.canonical.port=" + port + "\n"
-        + "akka.http.server.preview.enable-http2 = on"
+      //  + "akka.http.server.preview.enable-http2 = on"
     )
     .withFallback(ConfigFactory.load(confFile))
 
